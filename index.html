@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Life Analytics Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0b0f1a; --bg-2:#11172a; --panel:rgba(255,255,255,.04); --panel-2:rgba(255,255,255,.07);
+  --border:rgba(255,255,255,.08); --text:#e6e9f2; --muted:#8a93a8;
+  --primary:#7c5cff; --primary-2:#22d3ee; --accent:#f472b6; --success:#34d399; --warn:#fbbf24; --danger:#f87171;
+  --grad:linear-gradient(135deg,#7c5cff,#22d3ee);
+  --shadow:0 10px 40px -10px rgba(124,92,255,.35);
+}
+[data-theme="light"]{
+  --bg:#f6f7fb; --bg-2:#eef1f8; --panel:rgba(255,255,255,.7); --panel-2:rgba(255,255,255,.9);
+  --border:rgba(15,23,42,.08); --text:#0f172a; --muted:#52607a;
+  --shadow:0 10px 40px -10px rgba(124,92,255,.25);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Inter',system-ui,sans-serif; color:var(--text); background:var(--bg);
+  background-image:radial-gradient(1200px 600px at 10% -10%, rgba(124,92,255,.25), transparent 60%),
+                   radial-gradient(900px 500px at 110% 10%, rgba(34,211,238,.18), transparent 60%);
+  min-height:100vh; overflow-x:hidden;
+}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;letter-spacing:-.01em}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;color:inherit}
+
+/* Layout */
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{
+  position:sticky;top:0;height:100vh;padding:22px 16px;
+  background:var(--panel);backdrop-filter:blur(20px);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;gap:6px;z-index:10;
+}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 18px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.brand-logo{width:36px;height:36px;border-radius:10px;background:var(--grad);box-shadow:var(--shadow);display:grid;place-items:center;font-weight:700;color:#fff}
+.brand-name{font-family:'Space Grotesk';font-weight:700;font-size:17px}
+.brand-sub{font-size:11px;color:var(--muted)}
+.nav-item{
+  display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;color:var(--muted);
+  font-size:14px;font-weight:500;transition:all .2s;
+}
+.nav-item:hover{background:var(--panel-2);color:var(--text)}
+.nav-item.active{background:var(--grad);color:#fff;box-shadow:var(--shadow)}
+.nav-icon{width:18px;height:18px;display:inline-block}
+.sidebar-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--border)}
+
+.main{padding:24px 30px 60px;max-width:100%;overflow-x:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.topbar h1{font-size:26px}
+.topbar .sub{color:var(--muted);font-size:13px;margin-top:2px}
+.top-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.clock{font-family:'Space Grotesk';font-weight:600;font-size:14px;padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--panel)}
+.btn{padding:9px 14px;border-radius:10px;font-size:13px;font-weight:600;border:1px solid var(--border);background:var(--panel);transition:all .15s}
+.btn:hover{background:var(--panel-2);transform:translateY(-1px)}
+.btn.primary{background:var(--grad);color:#fff;border-color:transparent;box-shadow:var(--shadow)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger);border-color:rgba(248,113,113,.3)}
+.btn.sm{padding:6px 10px;font-size:12px}
+.icon-btn{width:38px;height:38px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--border);background:var(--panel)}
+.icon-btn:hover{background:var(--panel-2)}
+
+/* Cards */
+.card{background:var(--panel);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:16px;padding:20px}
+.card h3{font-size:15px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.grid{display:grid;gap:18px}
+.g-4{grid-template-columns:repeat(4,1fr)}
+.g-3{grid-template-columns:repeat(3,1fr)}
+.g-2{grid-template-columns:repeat(2,1fr)}
+.stat .v{font-family:'Space Grotesk';font-size:28px;font-weight:700;margin-top:6px}
+.stat .d{font-size:12px;color:var(--muted);margin-top:4px}
+.stat .accent{color:var(--primary-2)}
+
+/* Forms */
+.form-row{display:grid;gap:10px;grid-template-columns:2fr 1fr 1fr 1fr auto;align-items:end}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.input,select.input{
+  background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--text);
+  outline:none;transition:border-color .15s;
+}
+.input:focus{border-color:var(--primary)}
+select.input{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a93a8' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+
+/* Activity list */
+.act-list{display:flex;flex-direction:column;gap:8px}
+.act{display:grid;grid-template-columns:6px 1fr auto auto auto;gap:12px;align-items:center;padding:12px 14px;border-radius:12px;background:var(--bg-2);border:1px solid var(--border)}
+.act .bar{width:6px;height:32px;border-radius:3px}
+.act .name{font-weight:600;font-size:14px}
+.act .time{font-size:12px;color:var(--muted);margin-top:2px}
+.act .dur{font-family:'Space Grotesk';font-weight:600;font-size:14px;color:var(--primary-2)}
+.act .acts{display:flex;gap:6px}
+
+/* Progress ring */
+.ring-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.ring{position:relative;width:120px;height:120px}
+.ring svg{transform:rotate(-90deg)}
+.ring .v{position:absolute;inset:0;display:grid;place-items:center;font-family:'Space Grotesk';font-weight:700;font-size:24px}
+
+/* Pills / badges */
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;background:var(--panel-2);border:1px solid var(--border)}
+.pill.ok{color:var(--success);border-color:rgba(52,211,153,.3)}
+.pill.warn{color:var(--warn);border-color:rgba(251,191,36,.3)}
+.pill.bad{color:var(--danger);border-color:rgba(248,113,113,.3)}
+
+/* Heatmap */
+.heatmap{display:grid;grid-template-columns:repeat(53,1fr);gap:3px}
+.heat-cell{aspect-ratio:1;border-radius:3px;background:var(--bg-2);border:1px solid var(--border)}
+
+/* Insights */
+.insight{display:flex;gap:12px;padding:14px;border-radius:12px;background:var(--bg-2);border:1px solid var(--border);margin-bottom:10px}
+.insight .ic{width:36px;height:36px;border-radius:10px;background:var(--grad);display:grid;place-items:center;flex-shrink:0;color:#fff;font-weight:700}
+.insight .txt{font-size:13px;line-height:1.5}
+
+/* Goals */
+.goal{padding:14px;border-radius:12px;background:var(--bg-2);border:1px solid var(--border);margin-bottom:10px}
+.goal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.goal-name{font-weight:600;font-size:14px}
+.goal-meta{font-size:12px;color:var(--muted)}
+.bar-bg{height:8px;background:var(--bg);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;background:var(--grad);border-radius:4px;transition:width .6s ease}
+
+/* Sections */
+.section{display:none;animation:fade .3s ease}
+.section.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* Calendar */
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-head{font-size:11px;color:var(--muted);text-align:center;padding:6px;font-weight:600;text-transform:uppercase}
+.cal-day{aspect-ratio:1;border-radius:10px;background:var(--bg-2);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;cursor:pointer;transition:all .15s;position:relative}
+.cal-day:hover{background:var(--panel-2);transform:translateY(-1px)}
+.cal-day.today{border-color:var(--primary)}
+.cal-day.has-data::after{content:'';position:absolute;bottom:6px;width:5px;height:5px;border-radius:50%;background:var(--primary-2)}
+.cal-day.selected{background:var(--grad);color:#fff;border-color:transparent}
+.cal-day.empty{visibility:hidden}
+
+/* Achievements */
+.achs{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+.ach{padding:18px;border-radius:14px;background:var(--bg-2);border:1px solid var(--border);text-align:center;transition:all .2s}
+.ach.unlocked{background:linear-gradient(135deg,rgba(124,92,255,.15),rgba(34,211,238,.1));border-color:var(--primary)}
+.ach .emoji{font-size:32px;margin-bottom:8px}
+.ach .ach-name{font-weight:600;font-size:13px;margin-bottom:4px}
+.ach .ach-desc{font-size:11px;color:var(--muted)}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:var(--bg-2);border:1px solid var(--border);border-radius:18px;padding:24px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:18px;margin-bottom:18px}
+
+/* Toast */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:200;display:flex;flex-direction:column;gap:10px}
+.toast{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:12px 18px;font-size:13px;box-shadow:var(--shadow);animation:slideIn .3s ease}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:none;opacity:1}}
+
+/* Quote */
+.quote{padding:18px;border-radius:14px;background:linear-gradient(135deg,rgba(124,92,255,.15),rgba(244,114,182,.1));border:1px solid var(--border);font-style:italic;font-size:14px;line-height:1.6}
+.quote .who{font-style:normal;font-weight:600;font-size:12px;color:var(--muted);margin-top:8px;display:block}
+
+/* Chart container */
+.chart-box{position:relative;height:280px}
+.chart-box.tall{height:340px}
+
+/* Mobile */
+.menu-toggle{display:none}
+@media (max-width:1100px){
+  .g-4{grid-template-columns:repeat(2,1fr)}
+  .g-3{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:fixed;left:-280px;width:260px;transition:left .3s}
+  .sidebar.open{left:0;box-shadow:0 0 60px rgba(0,0,0,.4)}
+  .menu-toggle{display:grid}
+  .main{padding:18px}
+  .g-4,.g-3,.g-2{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr 1fr}
+  .topbar h1{font-size:22px}
+}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-logo">L</div>
+      <div>
+        <div class="brand-name">Life Analytics</div>
+        <div class="brand-sub">Your 24h, decoded</div>
+      </div>
+    </div>
+    <button class="nav-item active" data-section="dashboard">📊 <span>Dashboard</span></button>
+    <button class="nav-item" data-section="tracker">⏱ <span>Daily Tracker</span></button>
+    <button class="nav-item" data-section="calendar">📅 <span>Calendar</span></button>
+    <button class="nav-item" data-section="analytics">📈 <span>Analytics</span></button>
+    <button class="nav-item" data-section="goals">🎯 <span>Goals</span></button>
+    <button class="nav-item" data-section="insights">💡 <span>Insights</span></button>
+    <button class="nav-item" data-section="achievements">🏆 <span>Achievements</span></button>
+    <button class="nav-item" data-section="settings">⚙️ <span>Settings</span></button>
+    <div class="sidebar-foot">
+      <button class="btn ghost sm" id="themeToggle">🌓 Toggle theme</button>
+      <div style="font-size:11px;color:var(--muted);text-align:center">v1.0 · Offline-first</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:14px">
+        <button class="icon-btn menu-toggle" id="menuToggle">☰</button>
+        <div>
+          <h1 id="pageTitle">Dashboard</h1>
+          <div class="sub" id="pageSub">Your life, in one glance.</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <div class="clock" id="clock">--:--:--</div>
+        <button class="btn primary" id="quickAdd">+ Add Activity</button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section class="section active" id="sec-dashboard">
+      <div class="grid g-4" style="margin-bottom:18px">
+        <div class="card stat"><div class="label">Today tracked</div><div class="v" id="kpiTracked">0h</div><div class="d" id="kpiRemaining">24h remaining</div></div>
+        <div class="card stat"><div class="label">Productivity</div><div class="v accent" id="kpiProd">0</div><div class="d">out of 100</div></div>
+        <div class="card stat"><div class="label">Sleep avg (7d)</div><div class="v" id="kpiSleep">0h</div><div class="d">last week</div></div>
+        <div class="card stat"><div class="label">Screen time avg</div><div class="v" id="kpiScreen">0h</div><div class="d">phone + social</div></div>
+      </div>
+
+      <div class="grid g-3" style="margin-bottom:18px">
+        <div class="card ring-wrap"><div class="label">Productivity</div><div class="ring" id="ringProd"></div></div>
+        <div class="card ring-wrap"><div class="label">Health</div><div class="ring" id="ringHealth"></div></div>
+        <div class="card ring-wrap"><div class="label">Learning</div><div class="ring" id="ringLearn"></div></div>
+        <div class="card ring-wrap"><div class="label">Digital Wellness</div><div class="ring" id="ringDigital"></div></div>
+        <div class="card ring-wrap"><div class="label">Consistency</div><div class="ring" id="ringCons"></div></div>
+        <div class="card"><h3>Quote of the day</h3><div class="quote" id="quoteBox"></div></div>
+      </div>
+
+      <div class="grid g-2" style="margin-bottom:18px">
+        <div class="card"><h3>Today's Distribution</h3><div class="chart-box"><canvas id="chartToday"></canvas></div></div>
+        <div class="card"><h3>24-hour Timeline</h3><div class="chart-box"><canvas id="chartTimeline"></canvas></div></div>
+      </div>
+
+      <div class="grid g-2">
+        <div class="card"><h3>This Week</h3><div class="chart-box"><canvas id="chartWeek"></canvas></div></div>
+        <div class="card"><h3>Productivity Trend (30d)</h3><div class="chart-box"><canvas id="chartTrend"></canvas></div></div>
+      </div>
+    </section>
+
+    <!-- TRACKER -->
+    <section class="section" id="sec-tracker">
+      <div class="card" style="margin-bottom:18px">
+        <h3>
+          <span>Tracking · <span id="trackDate"></span></span>
+          <span class="pill" id="trackPill">0h / 24h</span>
+        </h3>
+        <div class="form-row">
+          <div class="field"><label>Activity</label>
+            <select class="input" id="actType"></select>
+          </div>
+          <div class="field"><label>Start</label><input class="input" type="time" id="actStart"></div>
+          <div class="field"><label>End</label><input class="input" type="time" id="actEnd"></div>
+          <div class="field"><label>Mood (1-5)</label>
+            <select class="input" id="actMood"><option value="">—</option><option>1</option><option>2</option><option value="3" selected>3</option><option>4</option><option>5</option></select>
+          </div>
+          <button class="btn primary" id="addActBtn">Add</button>
+        </div>
+        <div class="field" style="margin-top:10px"><label>Note (optional)</label><input class="input" id="actNote" placeholder="e.g. deep work session"></div>
+      </div>
+
+      <div class="card">
+        <h3>Activities <button class="btn sm ghost" id="clearDay">Clear day</button></h3>
+        <div class="act-list" id="actList"></div>
+      </div>
+    </section>
+
+    <!-- CALENDAR -->
+    <section class="section" id="sec-calendar">
+      <div class="card" style="margin-bottom:18px">
+        <h3>
+          <span><button class="btn sm" id="prevMonth">‹</button> <span id="calLabel"></span> <button class="btn sm" id="nextMonth">›</button></span>
+          <input class="input" type="date" id="jumpDate" style="max-width:180px">
+        </h3>
+        <div class="calendar" id="calGrid"></div>
+      </div>
+      <div class="card">
+        <h3>Heatmap · last 365 days</h3>
+        <div class="heatmap" id="heatmap"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;font-size:11px;color:var(--muted);align-items:center">
+          Less <span class="heat-cell" style="width:12px;height:12px;background:var(--bg-2)"></span>
+          <span class="heat-cell" style="width:12px;height:12px;background:rgba(124,92,255,.3)"></span>
+          <span class="heat-cell" style="width:12px;height:12px;background:rgba(124,92,255,.55)"></span>
+          <span class="heat-cell" style="width:12px;height:12px;background:rgba(124,92,255,.8)"></span>
+          <span class="heat-cell" style="width:12px;height:12px;background:var(--primary)"></span> More
+        </div>
+      </div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section class="section" id="sec-analytics">
+      <div class="grid g-2" style="margin-bottom:18px">
+        <div class="card"><h3>Category totals (all-time)</h3><div class="chart-box tall"><canvas id="chartTotals"></canvas></div></div>
+        <div class="card"><h3>Activity distribution (30d)</h3><div class="chart-box tall"><canvas id="chartDist"></canvas></div></div>
+      </div>
+      <div class="grid g-2" style="margin-bottom:18px">
+        <div class="card"><h3>Long-term habits (area)</h3><div class="chart-box tall"><canvas id="chartArea"></canvas></div></div>
+        <div class="card"><h3>Monthly breakdown</h3><div class="chart-box tall"><canvas id="chartMonth"></canvas></div></div>
+      </div>
+      <div class="card">
+        <h3>Time Bank · lifetime hours</h3>
+        <div id="timeBank" class="grid g-3"></div>
+      </div>
+    </section>
+
+    <!-- GOALS -->
+    <section class="section" id="sec-goals">
+      <div class="card" style="margin-bottom:18px">
+        <h3>New goal</h3>
+        <div class="form-row">
+          <div class="field"><label>Activity</label><select class="input" id="goalAct"></select></div>
+          <div class="field"><label>Target hrs/day</label><input class="input" type="number" step="0.25" min="0" id="goalHrs" value="1"></div>
+          <div class="field"><label>Type</label>
+            <select class="input" id="goalType"><option value="min">At least</option><option value="max">At most</option></select>
+          </div>
+          <div></div>
+          <button class="btn primary" id="addGoal">Add goal</button>
+        </div>
+      </div>
+      <div class="card"><h3>Your goals</h3><div id="goalList"></div></div>
+    </section>
+
+    <!-- INSIGHTS -->
+    <section class="section" id="sec-insights">
+      <div class="grid g-2">
+        <div class="card"><h3>Personal insights</h3><div id="insightList"></div></div>
+        <div class="card">
+          <h3>Habit intelligence</h3>
+          <div id="habitStats" class="grid" style="grid-template-columns:1fr 1fr;gap:14px"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ACHIEVEMENTS -->
+    <section class="section" id="sec-achievements">
+      <div class="card"><h3>Badges</h3><div class="achs" id="achList"></div></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="section" id="sec-settings">
+      <div class="grid g-2">
+        <div class="card">
+          <h3>Data</h3>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button class="btn" id="expJson">⬇ Export JSON</button>
+            <button class="btn" id="expCsv">⬇ Export CSV</button>
+            <label class="btn" style="text-align:center">⬆ Import JSON<input type="file" id="impJson" accept=".json" hidden></label>
+            <button class="btn danger" id="resetAll">⚠ Reset all data</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Reports</h3>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button class="btn" data-report="daily">📄 Daily report</button>
+            <button class="btn" data-report="weekly">📄 Weekly report</button>
+            <button class="btn" data-report="monthly">📄 Monthly report</button>
+            <button class="btn" data-report="yearly">📄 Yearly report</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Custom activities</h3>
+          <div class="field"><label>Add custom activity</label>
+            <div style="display:flex;gap:8px">
+              <input class="input" id="customActName" placeholder="e.g. Meditation">
+              <input class="input" type="color" id="customActColor" value="#7c5cff" style="max-width:60px;padding:4px">
+              <button class="btn primary" id="addCustomAct">Add</button>
+            </div>
+          </div>
+          <div id="customList" style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px"></div>
+        </div>
+        <div class="card">
+          <h3>Life Replay</h3>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:12px">Replay today's day, activity-by-activity.</p>
+          <button class="btn primary" id="replayBtn">▶ Replay today</button>
+          <div id="replayBox" style="margin-top:14px;font-size:14px"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modal"><div class="modal" id="modalBody"></div></div>
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+/* =========================
+   Life Analytics Dashboard
+   Pure HTML/CSS/JS · LocalStorage
+   ========================= */
+
+const DEFAULT_ACTIVITIES = [
+  {name:'Sleep', color:'#6366f1', cat:'health'},
+  {name:'Mobile Usage', color:'#f87171', cat:'digital'},
+  {name:'Study', color:'#22d3ee', cat:'learn'},
+  {name:'Work', color:'#7c5cff', cat:'productive'},
+  {name:'Exercise', color:'#34d399', cat:'health'},
+  {name:'Transportation', color:'#94a3b8', cat:'other'},
+  {name:'Eating', color:'#fbbf24', cat:'health'},
+  {name:'Reading', color:'#a78bfa', cat:'learn'},
+  {name:'Social Media', color:'#ec4899', cat:'digital'},
+  {name:'Entertainment', color:'#f472b6', cat:'leisure'},
+  {name:'Family Time', color:'#fb923c', cat:'social'},
+  {name:'Religious', color:'#facc15', cat:'health'},
+  {name:'Meetings', color:'#60a5fa', cat:'productive'},
+  {name:'Coding', color:'#10b981', cat:'productive'},
+  {name:'Gaming', color:'#e879f9', cat:'leisure'},
+  {name:'Walking', color:'#84cc16', cat:'health'},
+  {name:'Shopping', color:'#fb7185', cat:'other'},
+];
+
+const QUOTES = [
+  ["How we spend our days is, of course, how we spend our lives.", "Annie Dillard"],
+  ["Time is the most valuable thing a man can spend.", "Theophrastus"],
+  ["The bad news is time flies. The good news is you're the pilot.", "Michael Altshuler"],
+  ["Lost time is never found again.", "Benjamin Franklin"],
+  ["It's not about having time. It's about making time.", "Unknown"],
+  ["You will never find time for anything. You must make it.", "Charles Buxton"],
+  ["Either you run the day, or the day runs you.", "Jim Rohn"],
+];
+
+const ACHIEVEMENTS = [
+  {id:'first', emoji:'🌱', name:'First Step', desc:'Log your first activity', check:s=>s.totalLogs>=1},
+  {id:'study7', emoji:'📚', name:'7-Day Study Streak', desc:'Study 7 days in a row', check:s=>s.streaks['Study']>=7},
+  {id:'study30', emoji:'🎓', name:'Scholar', desc:'Study 30 days in a row', check:s=>s.streaks['Study']>=30},
+  {id:'ex7', emoji:'💪', name:'Active Week', desc:'Exercise 7 days straight', check:s=>s.streaks['Exercise']>=7},
+  {id:'prod7', emoji:'🚀', name:'Productive Week', desc:'Productivity > 70 for 7 days', check:s=>s.prodStreak>=7},
+  {id:'prod30', emoji:'🏆', name:'Productivity Master', desc:'30-Day productivity streak', check:s=>s.prodStreak>=30},
+  {id:'sleep', emoji:'😴', name:'Early Sleeper', desc:'Sleep 8h avg for a week', check:s=>s.avgSleep>=8},
+  {id:'digi', emoji:'📵', name:'Digital Minimalist', desc:'Screen time < 2h avg', check:s=>s.avgScreen<2&&s.avgScreen>0},
+  {id:'days30', emoji:'📅', name:'Consistent', desc:'Track 30 different days', check:s=>s.totalDays>=30},
+  {id:'days100', emoji:'💎', name:'Centurion', desc:'Track 100 different days', check:s=>s.totalDays>=100},
+];
+
+/* ===== STATE ===== */
+const Store = {
+  KEY:'life-analytics-v1',
+  data: null,
+  load(){
+    try{ this.data = JSON.parse(localStorage.getItem(this.KEY)) || null }catch{ this.data=null }
+    if(!this.data){
+      this.data = {
+        days:{}, // {YYYY-MM-DD: [{id,name,start,end,mood,note}]}
+        customActivities:[],
+        goals:[], // {id,name,hours,type}
+        theme:'dark',
+        moods:{}, // {YYYY-MM-DD: avgMood}
+      };
+      this.save();
+    }
+  },
+  save(){ localStorage.setItem(this.KEY, JSON.stringify(this.data)) },
+  reset(){ localStorage.removeItem(this.KEY); this.load() },
+};
+
+/* ===== UTIL ===== */
+const $ = s=>document.querySelector(s);
+const $$ = s=>document.querySelectorAll(s);
+const pad = n=>String(n).padStart(2,'0');
+const todayKey = (d=new Date())=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fmtHrs = h=>{ const H=Math.floor(h); const M=Math.round((h-H)*60); return M?`${H}h ${M}m`:`${H}h` };
+const toMin = t=>{ const [h,m]=t.split(':').map(Number); return h*60+m };
+const fromMin = m=>`${pad(Math.floor(m/60)%24)}:${pad(m%60)}`;
+const uuid = ()=>Math.random().toString(36).slice(2,10);
+
+function getActivities(){
+  return [...DEFAULT_ACTIVITIES, ...Store.data.customActivities];
+}
+function getActivity(name){
+  return getActivities().find(a=>a.name===name) || {name,color:'#7c5cff',cat:'other'};
+}
+function durationHrs(a){
+  let s=toMin(a.start), e=toMin(a.end);
+  if(e<s) e+=1440; // overnight
+  return (e-s)/60;
+}
+function dayHours(day){
+  return (Store.data.days[day]||[]).reduce((sum,a)=>sum+durationHrs(a),0);
+}
+function toast(msg){
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  $('#toasts').appendChild(t); setTimeout(()=>t.remove(),3000);
+}
+
+/* ===== NAV ===== */
+function nav(section){
+  $$('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.section===section));
+  $$('.section').forEach(s=>s.classList.toggle('active', s.id===`sec-${section}`));
+  const titles = {
+    dashboard:['Dashboard',"Your life, in one glance."],
+    tracker:['Daily Tracker',"Log how you spend your 24 hours."],
+    calendar:['Calendar',"Travel across your timeline."],
+    analytics:['Analytics',"Patterns hiding in your data."],
+    goals:['Goals',"Aim. Track. Improve."],
+    insights:['Insights',"What your week is telling you."],
+    achievements:['Achievements',"Earn badges for consistency."],
+    settings:['Settings',"Data, custom activities, reports."],
+  };
+  const [t,s]=titles[section]; $('#pageTitle').textContent=t; $('#pageSub').textContent=s;
+  if(section==='dashboard') renderDashboard();
+  if(section==='tracker') renderTracker();
+  if(section==='calendar') renderCalendar();
+  if(section==='analytics') renderAnalytics();
+  if(section==='goals') renderGoals();
+  if(section==='insights') renderInsights();
+  if(section==='achievements') renderAchievements();
+  if(section==='settings') renderSettings();
+  $('#sidebar').classList.remove('open');
+}
+
+/* ===== TRACKER ===== */
+let trackingDate = todayKey();
+function renderTracker(){
+  $('#trackDate').textContent = trackingDate;
+  // Populate select
+  const sel = $('#actType');
+  sel.innerHTML = getActivities().map(a=>`<option value="${a.name}">${a.name}</option>`).join('');
+  // List
+  const acts = (Store.data.days[trackingDate]||[]).slice().sort((a,b)=>toMin(a.start)-toMin(b.start));
+  const list = $('#actList');
+  if(!acts.length){
+    list.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">No activities yet. Add your first one above.</div>`;
+  } else {
+    list.innerHTML = acts.map(a=>{
+      const act=getActivity(a.name); const d=durationHrs(a);
+      return `<div class="act">
+        <div class="bar" style="background:${act.color}"></div>
+        <div><div class="name">${a.name}</div><div class="time">${a.start} → ${a.end}${a.note?` · ${a.note}`:''}</div></div>
+        <div class="dur">${fmtHrs(d)}</div>
+        <div></div>
+        <div class="acts">
+          <button class="btn sm ghost" onclick="editAct('${a.id}')">✎</button>
+          <button class="btn sm ghost" onclick="delAct('${a.id}')">🗑</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  const total = dayHours(trackingDate);
+  const pill = $('#trackPill');
+  pill.textContent = `${fmtHrs(total)} / 24h`;
+  pill.className = 'pill ' + (Math.abs(total-24)<0.01 ? 'ok' : total>24 ? 'bad' : 'warn');
+}
+window.editAct = id=>{
+  const list = Store.data.days[trackingDate]||[];
+  const a = list.find(x=>x.id===id); if(!a) return;
+  $('#actType').value=a.name; $('#actStart').value=a.start; $('#actEnd').value=a.end;
+  $('#actMood').value=a.mood||''; $('#actNote').value=a.note||'';
+  $('#addActBtn').textContent='Update'; $('#addActBtn').dataset.editing=id;
+};
+window.delAct = id=>{
+  Store.data.days[trackingDate] = (Store.data.days[trackingDate]||[]).filter(a=>a.id!==id);
+  if(!Store.data.days[trackingDate].length) delete Store.data.days[trackingDate];
+  Store.save(); renderTracker(); toast('Activity removed');
+};
+
+function handleAddAct(){
+  const name=$('#actType').value, start=$('#actStart').value, end=$('#actEnd').value;
+  if(!name||!start||!end){ toast('Fill activity, start and end'); return; }
+  const dur = durationHrs({start,end});
+  if(dur<=0){ toast('End must be after start'); return; }
+  const totalNow = dayHours(trackingDate);
+  const editing = $('#addActBtn').dataset.editing;
+  let projected = totalNow + dur;
+  if(editing){
+    const cur = (Store.data.days[trackingDate]||[]).find(x=>x.id===editing);
+    if(cur) projected = totalNow - durationHrs(cur) + dur;
+  }
+  if(projected>24.01){ toast(`Exceeds 24h (would be ${fmtHrs(projected)})`); return; }
+  const entry = {id:editing||uuid(), name, start, end, mood:$('#actMood').value, note:$('#actNote').value.trim()};
+  Store.data.days[trackingDate] = Store.data.days[trackingDate]||[];
+  if(editing){
+    const i = Store.data.days[trackingDate].findIndex(x=>x.id===editing);
+    Store.data.days[trackingDate][i] = entry;
+    $('#addActBtn').textContent='Add'; delete $('#addActBtn').dataset.editing;
+  } else {
+    Store.data.days[trackingDate].push(entry);
+  }
+  // mood avg
+  const moods = Store.data.days[trackingDate].map(x=>+x.mood).filter(Boolean);
+  if(moods.length) Store.data.moods[trackingDate] = moods.reduce((a,b)=>a+b,0)/moods.length;
+  Store.save();
+  $('#actStart').value=''; $('#actEnd').value=''; $('#actNote').value='';
+  renderTracker(); toast(editing?'Updated':'Activity added');
+}
+
+/* ===== CALENDAR ===== */
+let calCursor = new Date();
+function renderCalendar(){
+  const y = calCursor.getFullYear(), m = calCursor.getMonth();
+  $('#calLabel').textContent = calCursor.toLocaleString('en',{month:'long',year:'numeric'});
+  const first = new Date(y,m,1).getDay();
+  const days = new Date(y,m+1,0).getDate();
+  const grid = $('#calGrid');
+  const heads = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html = heads.map(h=>`<div class="cal-head">${h}</div>`).join('');
+  for(let i=0;i<first;i++) html += `<div class="cal-day empty"></div>`;
+  for(let d=1;d<=days;d++){
+    const key = `${y}-${pad(m+1)}-${pad(d)}`;
+    const has = Store.data.days[key]?.length;
+    const isToday = key===todayKey();
+    const sel = key===trackingDate;
+    const hrs = has ? fmtHrs(dayHours(key)) : '';
+    html += `<div class="cal-day ${has?'has-data':''} ${isToday?'today':''} ${sel?'selected':''}" data-day="${key}">
+      <div style="font-weight:600">${d}</div>
+      <div style="font-size:10px;color:var(--muted)">${hrs}</div>
+    </div>`;
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll('.cal-day[data-day]').forEach(el=>{
+    el.onclick = ()=>{ trackingDate = el.dataset.day; renderCalendar(); nav('tracker'); };
+  });
+  renderHeatmap();
+}
+function renderHeatmap(){
+  const wrap = $('#heatmap');
+  const days = 365;
+  const today = new Date();
+  let html = '';
+  for(let i=days-1;i>=0;i--){
+    const d = new Date(today); d.setDate(today.getDate()-i);
+    const key = todayKey(d);
+    const hrs = dayHours(key);
+    let bg = 'var(--bg-2)';
+    if(hrs>0){
+      const score = computeDayScores(key).prod/100;
+      const opacity = Math.max(.25, score);
+      bg = `rgba(124,92,255,${opacity})`;
+    }
+    html += `<div class="heat-cell" style="background:${bg}" title="${key}: ${fmtHrs(hrs)}"></div>`;
+  }
+  wrap.innerHTML = html;
+}
+
+/* ===== SCORES ===== */
+function computeDayScores(day){
+  const acts = Store.data.days[day]||[];
+  const totals = {};
+  acts.forEach(a=>{ totals[a.name]=(totals[a.name]||0)+durationHrs(a) });
+  const cat = {productive:0,health:0,learn:0,digital:0,leisure:0,social:0,other:0};
+  Object.entries(totals).forEach(([n,h])=>{ cat[getActivity(n).cat]=(cat[getActivity(n).cat]||0)+h });
+  const tracked = Object.values(totals).reduce((a,b)=>a+b,0);
+  if(!tracked) return {prod:0,health:0,learn:0,digital:0,cons:0};
+  const prod = Math.min(100, Math.round( (cat.productive*8 + cat.learn*6 + cat.health*4 - cat.digital*4 - cat.leisure*2) + 30 ));
+  const health = Math.min(100, Math.round( (totals['Sleep']||0)*5 + cat.health*6 ));
+  const learn = Math.min(100, Math.round(cat.learn*15));
+  const digi = Math.max(0, 100 - Math.round((totals['Mobile Usage']||0)*10 + (totals['Social Media']||0)*12));
+  const cons = Math.min(100, Math.round((tracked/24)*100));
+  return {prod:Math.max(0,prod), health, learn, digital:digi, cons};
+}
+function avgScores(days){
+  if(!days.length) return {prod:0,health:0,learn:0,digital:0,cons:0};
+  const s = days.map(computeDayScores);
+  const out = {prod:0,health:0,learn:0,digital:0,cons:0};
+  s.forEach(x=>Object.keys(out).forEach(k=>out[k]+=x[k]));
+  Object.keys(out).forEach(k=>out[k]=Math.round(out[k]/days.length));
+  return out;
+}
+
+/* ===== RINGS ===== */
+function drawRing(el, value, color){
+  const r=50, c=2*Math.PI*r;
+  const off = c - (value/100)*c;
+  el.innerHTML = `<svg width="120" height="120">
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="var(--border)" stroke-width="10"/>
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="${color}" stroke-width="10" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${c}">
+      <animate attributeName="stroke-dashoffset" from="${c}" to="${off}" dur=".8s" fill="freeze"/>
+    </circle>
+  </svg><div class="v">${value}</div>`;
+}
+
+/* ===== DASHBOARD ===== */
+let charts = {};
+function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+function chartOpts(extra={}){
+  const text = getComputedStyle(document.body).getPropertyValue('--text').trim();
+  const grid = getComputedStyle(document.body).getPropertyValue('--border').trim();
+  return {responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:text,font:{size:11}}}},
+    scales:extra.noScale?undefined:{x:{ticks:{color:text,font:{size:10}},grid:{color:grid}},y:{ticks:{color:text,font:{size:10}},grid:{color:grid}}}, ...extra};
+}
+
+function renderDashboard(){
+  const today = todayKey();
+  const tracked = dayHours(today);
+  $('#kpiTracked').textContent = fmtHrs(tracked);
+  $('#kpiRemaining').textContent = `${fmtHrs(Math.max(0,24-tracked))} remaining`;
+  const stats = computeAllStats();
+  $('#kpiProd').textContent = computeDayScores(today).prod;
+  $('#kpiSleep').textContent = fmtHrs(stats.avgSleep);
+  $('#kpiScreen').textContent = fmtHrs(stats.avgScreen);
+
+  const ts = computeDayScores(today);
+  drawRing($('#ringProd'), ts.prod, '#7c5cff');
+  drawRing($('#ringHealth'), ts.health, '#34d399');
+  drawRing($('#ringLearn'), ts.learn, '#22d3ee');
+  drawRing($('#ringDigital'), ts.digital, '#f472b6');
+  drawRing($('#ringCons'), ts.cons, '#fbbf24');
+
+  const q = QUOTES[new Date().getDate()%QUOTES.length];
+  $('#quoteBox').innerHTML = `"${q[0]}"<span class="who">— ${q[1]}</span>`;
+
+  // Today pie
+  destroyChart('today');
+  const acts = Store.data.days[today]||[];
+  const totals = {};
+  acts.forEach(a=>{ totals[a.name]=(totals[a.name]||0)+durationHrs(a) });
+  const labels = Object.keys(totals);
+  charts.today = new Chart($('#chartToday'), {
+    type:'doughnut',
+    data:{labels, datasets:[{data:Object.values(totals), backgroundColor:labels.map(n=>getActivity(n).color), borderWidth:0}]},
+    options:chartOpts({noScale:true,cutout:'65%'})
+  });
+
+  // Timeline (24h horizontal bar)
+  destroyChart('timeline');
+  const hours = Array(24).fill(null).map(()=>({}));
+  acts.forEach(a=>{
+    let s=toMin(a.start), e=toMin(a.end); if(e<s) e+=1440;
+    for(let m=s;m<e;m++){ const h=Math.floor(m/60)%24; hours[h][a.name]=(hours[h][a.name]||0)+1/60; }
+  });
+  const allNames = [...new Set(acts.map(a=>a.name))];
+  const datasets = allNames.map(n=>({label:n, data:hours.map(h=>h[n]||0), backgroundColor:getActivity(n).color, stack:'a', borderWidth:0}));
+  charts.timeline = new Chart($('#chartTimeline'),{
+    type:'bar',
+    data:{labels:Array.from({length:24},(_,i)=>`${i}:00`),datasets},
+    options:chartOpts({scales:{x:{stacked:true,ticks:{color:getComputedStyle(document.body).getPropertyValue('--text'),font:{size:9}},grid:{display:false}},y:{stacked:true,max:1,display:false}},plugins:{legend:{display:false}}})
+  });
+
+  // Week stacked
+  destroyChart('week');
+  const last7 = lastNDays(7);
+  const catTotals = {Productive:[],Health:[],Learning:[],Digital:[],Leisure:[]};
+  const catMap = {productive:'Productive',health:'Health',learn:'Learning',digital:'Digital',leisure:'Leisure'};
+  last7.forEach(day=>{
+    const t={Productive:0,Health:0,Learning:0,Digital:0,Leisure:0};
+    (Store.data.days[day]||[]).forEach(a=>{
+      const c = getActivity(a.name).cat;
+      if(catMap[c]) t[catMap[c]] += durationHrs(a);
+    });
+    Object.keys(t).forEach(k=>catTotals[k].push(t[k]));
+  });
+  const cColors = {Productive:'#7c5cff',Health:'#34d399',Learning:'#22d3ee',Digital:'#f472b6',Leisure:'#fbbf24'};
+  charts.week = new Chart($('#chartWeek'),{
+    type:'bar',
+    data:{labels:last7.map(d=>d.slice(5)), datasets:Object.entries(catTotals).map(([k,v])=>({label:k,data:v,backgroundColor:cColors[k],borderWidth:0,stack:'a'}))},
+    options:chartOpts({scales:{x:{stacked:true,ticks:{color:'#8a93a8',font:{size:10}}},y:{stacked:true,ticks:{color:'#8a93a8',font:{size:10}}}}})
+  });
+
+  // Trend
+  destroyChart('trend');
+  const last30 = lastNDays(30);
+  charts.trend = new Chart($('#chartTrend'),{
+    type:'line',
+    data:{labels:last30.map(d=>d.slice(5)), datasets:[{
+      label:'Productivity', data:last30.map(d=>computeDayScores(d).prod),
+      borderColor:'#7c5cff', backgroundColor:'rgba(124,92,255,.15)', fill:true, tension:.35, pointRadius:0, borderWidth:2
+    }]},
+    options:chartOpts()
+  });
+}
+
+function lastNDays(n){
+  const arr=[]; const t=new Date();
+  for(let i=n-1;i>=0;i--){ const d=new Date(t); d.setDate(t.getDate()-i); arr.push(todayKey(d)); }
+  return arr;
+}
+
+/* ===== ANALYTICS ===== */
+function renderAnalytics(){
+  // Totals (all-time bar)
+  destroyChart('totals');
+  const totals = {};
+  Object.values(Store.data.days).forEach(arr=>arr.forEach(a=>{
+    totals[a.name]=(totals[a.name]||0)+durationHrs(a);
+  }));
+  const sorted = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  charts.totals = new Chart($('#chartTotals'),{
+    type:'bar',
+    data:{labels:sorted.map(s=>s[0]), datasets:[{data:sorted.map(s=>+s[1].toFixed(1)),backgroundColor:sorted.map(s=>getActivity(s[0]).color),borderWidth:0}]},
+    options:chartOpts({indexAxis:'y',plugins:{legend:{display:false}}})
+  });
+
+  // Distribution (30d pie)
+  destroyChart('dist');
+  const last30 = lastNDays(30);
+  const t30 = {};
+  last30.forEach(d=>(Store.data.days[d]||[]).forEach(a=>{ t30[a.name]=(t30[a.name]||0)+durationHrs(a) }));
+  const ls = Object.keys(t30);
+  charts.dist = new Chart($('#chartDist'),{
+    type:'pie',
+    data:{labels:ls, datasets:[{data:Object.values(t30),backgroundColor:ls.map(n=>getActivity(n).color),borderWidth:0}]},
+    options:chartOpts({noScale:true})
+  });
+
+  // Area - long-term habits
+  destroyChart('area');
+  const last90 = lastNDays(90);
+  const habits = ['Sleep','Study','Exercise','Mobile Usage'];
+  charts.area = new Chart($('#chartArea'),{
+    type:'line',
+    data:{labels:last90.map(d=>d.slice(5)), datasets:habits.map(h=>{
+      const c = getActivity(h).color;
+      return {label:h, data:last90.map(d=>{
+        return (Store.data.days[d]||[]).filter(a=>a.name===h).reduce((s,a)=>s+durationHrs(a),0);
+      }), borderColor:c, backgroundColor:c+'30', fill:true, tension:.35, pointRadius:0, borderWidth:2};
+    })},
+    options:chartOpts()
+  });
+
+  // Monthly
+  destroyChart('month');
+  const monthly = {};
+  Object.entries(Store.data.days).forEach(([d,arr])=>{
+    const m=d.slice(0,7);
+    monthly[m]=(monthly[m]||0)+arr.reduce((s,a)=>s+durationHrs(a),0);
+  });
+  const mks = Object.keys(monthly).sort();
+  charts.month = new Chart($('#chartMonth'),{
+    type:'bar',
+    data:{labels:mks, datasets:[{label:'Hours tracked',data:mks.map(k=>+monthly[k].toFixed(1)),backgroundColor:'#22d3ee',borderWidth:0}]},
+    options:chartOpts()
+  });
+
+  // Time bank
+  const tb = $('#timeBank');
+  tb.innerHTML = sorted.slice(0,9).map(([n,h])=>{
+    const a = getActivity(n);
+    return `<div style="padding:14px;border-radius:12px;background:var(--bg-2);border-left:4px solid ${a.color}">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600">${n}</div>
+      <div style="font-family:'Space Grotesk';font-size:22px;font-weight:700;margin-top:4px">${fmtHrs(h)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">${(h/24).toFixed(1)} full days</div>
+    </div>`;
+  }).join('') || `<div style="color:var(--muted);font-size:13px">Start tracking to fill your time bank.</div>`;
+}
+
+/* ===== GOALS ===== */
+function renderGoals(){
+  const sel = $('#goalAct');
+  sel.innerHTML = getActivities().map(a=>`<option value="${a.name}">${a.name}</option>`).join('');
+  const list = $('#goalList');
+  if(!Store.data.goals.length){
+    list.innerHTML = `<div style="color:var(--muted);font-size:13px">No goals yet. Create one above.</div>`;
+    return;
+  }
+  const today = todayKey();
+  list.innerHTML = Store.data.goals.map(g=>{
+    const todayHrs = (Store.data.days[today]||[]).filter(a=>a.name===g.name).reduce((s,a)=>s+durationHrs(a),0);
+    const pct = g.type==='min' ? Math.min(100,(todayHrs/g.hours)*100) : Math.min(100,Math.max(0,100-(todayHrs/g.hours)*100));
+    const streak = computeGoalStreak(g);
+    const ok = g.type==='min' ? todayHrs>=g.hours : todayHrs<=g.hours;
+    return `<div class="goal">
+      <div class="goal-head">
+        <div><div class="goal-name">${g.name} — ${g.type==='min'?'≥':'≤'} ${g.hours}h/day</div>
+          <div class="goal-meta">Today: ${fmtHrs(todayHrs)} · 🔥 ${streak}d streak</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="pill ${ok?'ok':'warn'}">${Math.round(pct)}%</span>
+          <button class="btn sm danger" onclick="delGoal('${g.id}')">×</button>
+        </div>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+window.delGoal = id=>{ Store.data.goals = Store.data.goals.filter(g=>g.id!==id); Store.save(); renderGoals(); };
+function computeGoalStreak(g){
+  let streak=0; const t=new Date();
+  for(let i=0;i<365;i++){
+    const d=new Date(t); d.setDate(t.getDate()-i); const k=todayKey(d);
+    const h = (Store.data.days[k]||[]).filter(a=>a.name===g.name).reduce((s,a)=>s+durationHrs(a),0);
+    const ok = g.type==='min' ? h>=g.hours : h<=g.hours && Store.data.days[k];
+    if(ok) streak++; else break;
+  }
+  return streak;
+}
+
+/* ===== INSIGHTS ===== */
+function computeAllStats(){
+  const days = Object.keys(Store.data.days);
+  const totalLogs = days.reduce((s,d)=>s+Store.data.days[d].length,0);
+  const last7 = lastNDays(7);
+  const last30 = lastNDays(30);
+  const avg = (arr,name)=>{
+    const vs = arr.map(d=>(Store.data.days[d]||[]).filter(a=>a.name===name).reduce((s,a)=>s+durationHrs(a),0)).filter(v=>v>0);
+    return vs.length ? vs.reduce((a,b)=>a+b,0)/vs.length : 0;
+  };
+  const avgSleep = avg(last7,'Sleep');
+  const avgScreen = last7.map(d=>{
+    return (Store.data.days[d]||[]).filter(a=>a.name==='Mobile Usage'||a.name==='Social Media').reduce((s,a)=>s+durationHrs(a),0);
+  }).filter(v=>v>0).reduce((a,b,_,arr)=>a+b/arr.length,0);
+  const avgStudy = avg(last7,'Study');
+  const avgEx = avg(last7,'Exercise');
+  // best day
+  const dayProd = {};
+  Object.keys(Store.data.days).forEach(d=>{ dayProd[d]=computeDayScores(d).prod });
+  const bestDay = Object.entries(dayProd).sort((a,b)=>b[1]-a[1])[0];
+  // by weekday
+  const wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const wdScores = wd.map(()=>[]);
+  Object.entries(dayProd).forEach(([d,p])=>{ wdScores[new Date(d).getDay()].push(p) });
+  const wdAvg = wdScores.map(arr=>arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0);
+  const bestWd = wd[wdAvg.indexOf(Math.max(...wdAvg))];
+  // streaks
+  const streaks = {};
+  ['Study','Exercise','Sleep','Coding','Reading'].forEach(n=>{
+    let s=0; const t=new Date();
+    for(let i=0;i<365;i++){
+      const d=new Date(t); d.setDate(t.getDate()-i);
+      const has = (Store.data.days[todayKey(d)]||[]).some(a=>a.name===n);
+      if(has) s++; else break;
+    }
+    streaks[n]=s;
+  });
+  let prodStreak=0; const t=new Date();
+  for(let i=0;i<365;i++){
+    const d=new Date(t); d.setDate(t.getDate()-i);
+    if(computeDayScores(todayKey(d)).prod>=70) prodStreak++; else break;
+  }
+  return {totalLogs,totalDays:days.length,avgSleep,avgScreen,avgStudy,avgEx,bestDay,bestWd,streaks,prodStreak,wdAvg};
+}
+
+function renderInsights(){
+  const s = computeAllStats();
+  const today=todayKey(); const y=new Date(); y.setDate(y.getDate()-1); const yKey=todayKey(y);
+  const insights = [];
+  // Phone yesterday compare
+  const phT=(Store.data.days[today]||[]).filter(a=>a.name==='Mobile Usage').reduce((x,a)=>x+durationHrs(a),0);
+  const phY=(Store.data.days[yKey]||[]).filter(a=>a.name==='Mobile Usage').reduce((x,a)=>x+durationHrs(a),0);
+  if(phT||phY){
+    const diff = phT-phY;
+    insights.push(`📱 You used your phone ${Math.abs(diff).toFixed(1)}h ${diff>0?'more':'less'} than yesterday.`);
+  }
+  // Study week
+  const studyW = lastNDays(7).reduce((s,d)=>s+(Store.data.days[d]||[]).filter(a=>a.name==='Study').reduce((x,a)=>x+durationHrs(a),0),0);
+  const studyPrev = lastNDays(14).slice(0,7).reduce((s,d)=>s+(Store.data.days[d]||[]).filter(a=>a.name==='Study').reduce((x,a)=>x+durationHrs(a),0),0);
+  if(studyPrev>0){
+    const pct = ((studyW-studyPrev)/studyPrev*100).toFixed(0);
+    insights.push(`📚 Your study time ${pct>=0?'increased':'decreased'} by ${Math.abs(pct)}% this week.`);
+  }
+  if(s.avgSleep>0 && s.avgSleep<7) insights.push(`😴 You're sleeping below 7h on average — aim higher this week.`);
+  if(s.avgSleep>=8) insights.push(`✨ Sleep avg is ${s.avgSleep.toFixed(1)}h — keep it up.`);
+  if(s.bestWd) insights.push(`🚀 You're most productive on ${s.bestWd}s.`);
+  if(s.bestDay) insights.push(`🏆 Your best day ever was ${s.bestDay[0]} with score ${s.bestDay[1]}.`);
+  if(s.streaks.Study>=3) insights.push(`🔥 You're on a ${s.streaks.Study}-day study streak.`);
+  if(s.avgScreen>4) insights.push(`⚠️ Heavy digital usage detected — avg ${s.avgScreen.toFixed(1)}h/day.`);
+  if(!insights.length) insights.push(`💡 Log a few days to unlock personalized insights.`);
+
+  $('#insightList').innerHTML = insights.map(t=>`<div class="insight"><div class="ic">i</div><div class="txt">${t}</div></div>`).join('');
+
+  $('#habitStats').innerHTML = `
+    ${stat('Avg sleep (7d)', fmtHrs(s.avgSleep))}
+    ${stat('Avg screen (7d)', fmtHrs(s.avgScreen))}
+    ${stat('Avg study (7d)', fmtHrs(s.avgStudy))}
+    ${stat('Avg exercise (7d)', fmtHrs(s.avgEx))}
+    ${stat('Study streak', `${s.streaks.Study} days`)}
+    ${stat('Exercise streak', `${s.streaks.Exercise} days`)}
+    ${stat('Productivity streak', `${s.prodStreak} days`)}
+    ${stat('Most productive day', s.bestWd||'—')}
+  `;
+}
+function stat(l,v){
+  return `<div style="padding:14px;border-radius:12px;background:var(--bg-2)">
+    <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase">${l}</div>
+    <div style="font-family:'Space Grotesk';font-size:20px;font-weight:700;margin-top:4px">${v}</div></div>`;
+}
+
+/* ===== ACHIEVEMENTS ===== */
+function renderAchievements(){
+  const s = computeAllStats();
+  $('#achList').innerHTML = ACHIEVEMENTS.map(a=>{
+    const got = a.check(s);
+    return `<div class="ach ${got?'unlocked':''}">
+      <div class="emoji" style="${got?'':'filter:grayscale(1);opacity:.4'}">${a.emoji}</div>
+      <div class="ach-name">${a.name}</div>
+      <div class="ach-desc">${a.desc}</div>
+      ${got?'<div class="pill ok" style="margin-top:8px">Unlocked</div>':''}
+    </div>`;
+  }).join('');
+}
+
+/* ===== SETTINGS / DATA ===== */
+function renderSettings(){
+  const cl = $('#customList');
+  cl.innerHTML = Store.data.customActivities.length
+    ? Store.data.customActivities.map((a,i)=>`<span class="pill"><span style="width:8px;height:8px;border-radius:50%;background:${a.color};display:inline-block"></span>${a.name} <button onclick="rmCustom(${i})" style="margin-left:6px;color:var(--danger)">×</button></span>`).join('')
+    : `<span style="color:var(--muted);font-size:12px">No custom activities yet.</span>`;
+}
+window.rmCustom = i=>{ Store.data.customActivities.splice(i,1); Store.save(); renderSettings(); toast('Removed'); };
+
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(Store.data,null,2)],{type:'application/json'});
+  download(blob, `life-analytics-${todayKey()}.json`);
+}
+function exportCSV(){
+  const rows = [['date','activity','start','end','duration_hours','mood','note']];
+  Object.entries(Store.data.days).forEach(([d,arr])=>arr.forEach(a=>{
+    rows.push([d,a.name,a.start,a.end,durationHrs(a).toFixed(2),a.mood||'',`"${(a.note||'').replace(/"/g,'""')}"`]);
+  }));
+  const blob = new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'});
+  download(blob, `life-analytics-${todayKey()}.csv`);
+}
+function download(blob, name){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+}
+function importJSON(file){
+  const r = new FileReader();
+  r.onload = e=>{
+    try{ const d=JSON.parse(e.target.result); if(d.days){ Store.data=d; Store.save(); toast('Imported'); nav('dashboard'); } }
+    catch{ toast('Invalid file'); }
+  };
+  r.readAsText(file);
+}
+
+function generateReport(type){
+  let days, label;
+  if(type==='daily'){ days=[todayKey()]; label='Daily'; }
+  else if(type==='weekly'){ days=lastNDays(7); label='Weekly'; }
+  else if(type==='monthly'){ days=lastNDays(30); label='Monthly'; }
+  else { days=lastNDays(365); label='Yearly'; }
+  const totals={};
+  days.forEach(d=>(Store.data.days[d]||[]).forEach(a=>{ totals[a.name]=(totals[a.name]||0)+durationHrs(a) }));
+  const scores = avgScores(days);
+  const sorted = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  const html = `<h3>${label} Report</h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px">${days[0]} → ${days[days.length-1]}</div>
+    <div class="grid g-2" style="margin-bottom:14px">
+      ${stat('Avg Productivity', scores.prod)}
+      ${stat('Avg Health', scores.health)}
+      ${stat('Avg Learning', scores.learn)}
+      ${stat('Avg Digital Wellness', scores.digital)}
+    </div>
+    <h4 style="margin-bottom:10px;font-family:'Space Grotesk'">Activity totals</h4>
+    ${sorted.map(([n,h])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${getActivity(n).color};margin-right:8px"></span>${n}</span>
+      <strong>${fmtHrs(h)}</strong></div>`).join('')||'<div style="color:var(--muted)">No data</div>'}
+    <div style="margin-top:18px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeModal()">Close</button>
+      <button class="btn primary" onclick="downloadReport('${label}')">⬇ Download</button>
+    </div>`;
+  openModal(html);
+  window._reportText = `${label} Report (${days[0]} → ${days[days.length-1]})\n\nAvg Productivity: ${scores.prod}\nAvg Health: ${scores.health}\nAvg Learning: ${scores.learn}\nAvg Digital Wellness: ${scores.digital}\n\nTotals:\n${sorted.map(([n,h])=>`- ${n}: ${fmtHrs(h)}`).join('\n')}`;
+}
+window.downloadReport = label=>{
+  const blob = new Blob([window._reportText],{type:'text/plain'});
+  download(blob, `${label.toLowerCase()}-report-${todayKey()}.txt`);
+  closeModal();
+};
+
+/* ===== MODAL ===== */
+function openModal(html){ $('#modalBody').innerHTML = html; $('#modal').classList.add('show'); }
+window.closeModal = ()=>$('#modal').classList.remove('show');
+$('#modal').addEventListener('click', e=>{ if(e.target.id==='modal') closeModal(); });
+
+/* ===== REPLAY ===== */
+function replayDay(){
+  const acts = (Store.data.days[todayKey()]||[]).slice().sort((a,b)=>toMin(a.start)-toMin(b.start));
+  const box = $('#replayBox');
+  if(!acts.length){ box.textContent='No activities today.'; return; }
+  box.innerHTML=''; let i=0;
+  const step = ()=>{
+    if(i>=acts.length) return;
+    const a=acts[i++], act=getActivity(a.name);
+    const el = document.createElement('div');
+    el.style.cssText=`padding:10px;margin-top:8px;border-left:3px solid ${act.color};background:var(--bg-2);border-radius:8px;animation:fade .3s`;
+    el.innerHTML=`<strong>${a.start}–${a.end}</strong> · ${a.name} (${fmtHrs(durationHrs(a))})${a.note?` · <em>${a.note}</em>`:''}`;
+    box.appendChild(el);
+    setTimeout(step, 500);
+  };
+  step();
+}
+
+/* ===== THEME ===== */
+function setTheme(t){
+  document.documentElement.dataset.theme = t;
+  Store.data.theme = t; Store.save();
+}
+
+/* ===== INIT ===== */
+function init(){
+  Store.load();
+  setTheme(Store.data.theme||'dark');
+  // Defaults
+  $('#actStart').value='09:00'; $('#actEnd').value='10:00';
+  // Nav
+  $$('.nav-item').forEach(b=>b.onclick=()=>nav(b.dataset.section));
+  $('#menuToggle').onclick=()=>$('#sidebar').classList.toggle('open');
+  $('#themeToggle').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark') || (nav(document.querySelector('.nav-item.active').dataset.section));
+  $('#themeToggle').addEventListener('click',()=>setTimeout(()=>nav(document.querySelector('.nav-item.active').dataset.section),50));
+  $('#quickAdd').onclick=()=>nav('tracker');
+  // Tracker
+  $('#addActBtn').onclick=handleAddAct;
+  $('#clearDay').onclick=()=>{ if(confirm('Clear all activities for '+trackingDate+'?')){ delete Store.data.days[trackingDate]; Store.save(); renderTracker(); } };
+  // Calendar
+  $('#prevMonth').onclick=()=>{ calCursor.setMonth(calCursor.getMonth()-1); renderCalendar(); };
+  $('#nextMonth').onclick=()=>{ calCursor.setMonth(calCursor.getMonth()+1); renderCalendar(); };
+  $('#jumpDate').onchange=e=>{ trackingDate=e.target.value; calCursor=new Date(e.target.value); renderCalendar(); nav('tracker'); };
+  // Goals
+  $('#addGoal').onclick=()=>{
+    const g={id:uuid(),name:$('#goalAct').value,hours:+$('#goalHrs').value,type:$('#goalType').value};
+    Store.data.goals.push(g); Store.save(); renderGoals(); toast('Goal added');
+  };
+  // Settings
+  $('#expJson').onclick=exportJSON; $('#expCsv').onclick=exportCSV;
+  $('#impJson').onchange=e=>e.target.files[0]&&importJSON(e.target.files[0]);
+  $('#resetAll').onclick=()=>{ if(confirm('Erase ALL data? This cannot be undone.')){ Store.reset(); toast('Reset complete'); nav('dashboard'); } };
+  $$('[data-report]').forEach(b=>b.onclick=()=>generateReport(b.dataset.report));
+  $('#addCustomAct').onclick=()=>{
+    const name=$('#customActName').value.trim(); if(!name) return;
+    Store.data.customActivities.push({name,color:$('#customActColor').value,cat:'other'});
+    Store.save(); $('#customActName').value=''; renderSettings(); toast('Custom activity added');
+  };
+  $('#replayBtn').onclick=replayDay;
+  // Clock
+  const tick=()=>{ const d=new Date(); $('#clock').textContent=d.toLocaleTimeString('en',{hour12:false}); };
+  tick(); setInterval(tick,1000);
+  // Seed demo data if empty
+  if(Object.keys(Store.data.days).length===0) seedDemo();
+  nav('dashboard');
+}
+
+function seedDemo(){
+  const samples = [
+    ['Sleep','23:00','07:00'],['Exercise','07:30','08:15'],['Eating','08:15','08:45'],
+    ['Work','09:00','12:30'],['Eating','12:30','13:15'],['Work','13:15','17:00'],
+    ['Walking','17:00','17:30'],['Study','18:00','19:30'],['Eating','19:30','20:15'],
+    ['Family Time','20:15','21:30'],['Mobile Usage','21:30','22:15'],['Reading','22:15','23:00'],
+  ];
+  const today = new Date();
+  for(let i=6;i>=0;i--){
+    const d=new Date(today); d.setDate(today.getDate()-i);
+    const k=todayKey(d);
+    Store.data.days[k]=samples.map(([n,s,e])=>{
+      // small randomization
+      const jitter=Math.floor(Math.random()*15)-7;
+      const adj=(t)=>{ let mm=toMin(t)+jitter; mm=(mm+1440)%1440; return fromMin(mm); };
+      return {id:uuid(),name:n,start:adj(s),end:adj(e),mood:String(3+Math.floor(Math.random()*3)),note:''};
+    });
+  }
+  Store.save();
+  toast('Demo data loaded — explore freely!');
+}
+
+init();
+</script>
+</body>
+</html>
