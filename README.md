@@ -222,6 +222,34 @@ The dashboard is optimized for:
 
 ---
 
+## 📸 Screenshots
+
+### 🏠 Dashboard
+
+![Dashboard Screenshot](screenshots/dashboard.png)
+
+### ⏱ Daily Tracker
+
+![Daily Tracker Screenshot](screenshots/tracker.png)
+
+### 📅 Calendar View
+
+![Calendar Screenshot](screenshots/calendar.png)
+
+### 📊 Analytics
+
+![Analytics Screenshot](screenshots/analytics.png)
+
+### 🎯 Goals Management
+
+![Goals Screenshot](screenshots/goals.png)
+
+### 💡 Insights & Achievements
+
+![Insights Screenshot](screenshots/insights.png)
+
+---
+
 ## 👨‍💻 Author
 
 ### Abdur Rahman
