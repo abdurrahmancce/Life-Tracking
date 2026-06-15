@@ -110,11 +110,6 @@ The application works entirely in the browser and stores all data locally, ensur
 Life-Analytics-Dashboard/
 │
 ├── index.html
-├── assets/
-│   ├── styles
-│   ├── scripts
-│   └── images
-│
 ├── README.md
 └── screenshots/
 ```
@@ -240,8 +235,9 @@ Computer & Communication Engineering Student
 
 ### Connect With Me
 
-* GitHub: https://github.com/yourusername
-* LinkedIn: https://linkedin.com/in/yourusername
+[![GitHub](https://img.shields.io/badge/GitHub-abdurrahmancce-181717?style=for-the-badge&logo=github)](https://github.com/abdurrahmancce)
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Abdur%20Rahman-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/abdur-rahman-akash26/)
 
 ---
 
