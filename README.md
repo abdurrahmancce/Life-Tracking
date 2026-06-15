@@ -141,8 +141,11 @@ Life-Analytics-Dashboard/
 All user data is stored locally in the browser using Local Storage.
 
 ✔ No external database
+
 ✔ No server required
+
 ✔ No user account needed
+
 ✔ Complete privacy and control
 
 ---
