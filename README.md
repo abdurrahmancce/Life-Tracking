@@ -111,7 +111,6 @@ Life-Analytics-Dashboard/
 │
 ├── index.html
 ├── README.md
-└── screenshots/
 ```
 
 ---
