@@ -509,7 +509,7 @@ function toast(msg){
   $('#toasts').appendChild(t); setTimeout(()=>t.remove(),3000);
 }
 
-/* ===== NAV ===== */
+/*  NAV  */
 function nav(section){
   $$('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.section===section));
   $$('.section').forEach(s=>s.classList.toggle('active', s.id===`sec-${section}`));
