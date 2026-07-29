@@ -900,7 +900,7 @@ function computeGoalStreak(g){
   return streak;
 }
 
-/* ===== INSIGHTS ===== */
+/*  INSIGHTS  */
 function computeAllStats(){
   const days = Object.keys(Store.data.days);
   const totalLogs = days.reduce((s,d)=>s+Store.data.days[d].length,0);
