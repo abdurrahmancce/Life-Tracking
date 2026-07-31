@@ -860,7 +860,7 @@ function renderAnalytics(){
   }).join('') || `<div style="color:var(--muted);font-size:13px">Start tracking to fill your time bank.</div>`;
 }
 
-/* ===== GOALS ===== */
+/*  GOALS  */
 function renderGoals(){
   const sel = $('#goalAct');
   sel.innerHTML = getActivities().map(a=>`<option value="${a.name}">${a.name}</option>`).join('');
