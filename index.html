@@ -1072,7 +1072,7 @@ window.downloadReport = label=>{
   closeModal();
 };
 
-/* ===== MODAL ===== */
+/*  MODAL  */
 function openModal(html){ $('#modalBody').innerHTML = html; $('#modal').classList.add('show'); }
 window.closeModal = ()=>$('#modal').classList.remove('show');
 $('#modal').addEventListener('click', e=>{ if(e.target.id==='modal') closeModal(); });
